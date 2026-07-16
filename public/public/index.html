@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Vyron Panel</title>
+    <link rel="icon" type="image/png" href="VyronIcon.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Syne:wght@500;700;800&family=Manrope:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="bg-layer bg-layer-grid"></div>
+    <div class="bg-layer bg-layer-radial"></div>
+
+    <section id="authGate" class="auth-gate hidden" aria-live="polite">
+      <div class="auth-card card animate-up">
+        <header class="auth-brand">
+          <div class="auth-brand-identity">
+            <img src="VyronIcon.png" alt="" />
+            <div>
+              <strong>Vyron Panel</strong>
+              <span>Server control</span>
+            </div>
+          </div>
+          <span id="authConnectionStatus" class="auth-status is-checking"><i></i><span>Connecting</span></span>
+        </header>
+
+        <div class="auth-copy">
+          <p class="eyebrow" id="authModeLabel">Setup</p>
+          <h2 id="authTitle">Create Your Admin Account</h2>
+          <p id="authSubtitle" class="subtitle">First launch detected. Create one admin user for this panel.</p>
+        </div>
+
+        <form id="authForm" class="fields auth-fields">
+          <label>
+            <span>Username</span>
+            <input type="text" name="username" autocomplete="username" placeholder="Enter username" required minlength="3" />
+          </label>
+          <label>
+            <span>Password</span>
+            <span class="password-input-wrap">
+              <input type="password" name="password" autocomplete="current-password" placeholder="Enter password" required minlength="6" />
+              <button id="authPasswordToggle" class="password-toggle" type="button" aria-label="Show password" aria-pressed="false">Show</button>
+            </span>
+          </label>
+          <p id="authCapsLock" class="auth-caps-lock hidden">Caps Lock is on</p>
+          <p id="authError" class="error"></p>
+          <button class="btn primary full" id="authSubmitBtn" type="submit">Create Admin</button>
+        </form>
+      </div>
+    </section>
+
+    <div class="app-shell">
+      <aside class="sidebar card animate-up">
+        <div class="brand-row">
+          <div class="brand-mark">
+            <img src="VyronIcon.png" alt="Vyron" />
+          </div>
+          <div class="brand-copy">
+            <p class="brand-name">Vyron</p>
+            <p class="brand-subtitle">Minecraft control panel</p>
+          </div>
+          <button id="sidebarToggleBtn" class="sidebar-toggle" type="button" aria-label="Collapse sidebar" title="Collapse sidebar">&lsaquo;</button>
+        </div>
+
+        <div class="sidebar-nav-scroll">
+        <div class="sidebar-section">
+          <p class="sidebar-label">Server</p>
+          <button class="nav-item" data-tab="console" title="Console"><span class="nav-icon" aria-hidden="true">&gt;_</span><span class="nav-text">Console</span></button>
+          <button class="nav-item" data-tab="multi-console" title="Multi Console"><span class="nav-icon" aria-hidden="true">#</span><span class="nav-text">Multi Console</span></button>
+          <button class="nav-item" data-tab="files" title="File Manager"><span class="nav-icon" aria-hidden="true">▱</span><span class="nav-text">File Manager</span></button>
+        </div>
+
+        <div class="sidebar-section">
+          <p id="serverScopeNavLabel" class="sidebar-label">Minecraft</p>
+          <button class="nav-item hidden" data-tab="proxy-overview" data-proxy-only title="Proxy Overview"><span class="nav-icon" aria-hidden="true">◇</span><span class="nav-text">Proxy Overview</span></button>
+          <button class="nav-item" data-tab="worlds" data-minecraft-only title="Worlds"><span class="nav-icon" aria-hidden="true">◎</span><span class="nav-text">Worlds</span></button>
+          <button class="nav-item" data-tab="players" data-minecraft-only title="Players"><span class="nav-icon" aria-hidden="true">○</span><span class="nav-text">Players</span></button>
+          <button class="nav-item" data-tab="config" title="Config"><span class="nav-icon" aria-hidden="true">≡</span><span class="nav-text">Config</span></button>
+          <button class="nav-item" data-tab="addons" title="Addons"><span class="nav-icon" aria-hidden="true">+</span><span class="nav-text">Addons</span></button>
+          <button class="nav-item" data-tab="monitoring" title="Monitoring"><span class="nav-icon" aria-hidden="true">⌁</span><span class="nav-text">Monitoring</span></button>
+        </div>
+
+        <div class="sidebar-section">
+          <p class="sidebar-label">Server Settings</p>
+          <button class="nav-item" data-tab="logs" title="Logs"><span class="nav-icon" aria-hidden="true">≣</span><span class="nav-text">Logs</span></button>
+          <button class="nav-item" data-tab="network" title="Network"><span class="nav-icon" aria-hidden="true">⌘</span><span class="nav-text">Network</span></button>
+          <button class="nav-item" data-tab="backups" title="Backups"><span class="nav-icon" aria-hidden="true">↻</span><span class="nav-text">Backups</span></button>
+          <button class="nav-item" data-tab="schedules" title="Schedules"><span class="nav-icon" aria-hidden="true">◷</span><span class="nav-text">Schedules</span></button>
+          <button class="nav-item" data-tab="activity" title="Activity"><span class="nav-icon" aria-hidden="true">∿</span><span class="nav-text">Activity</span></button>
+        </div>
+
+        <div class="sidebar-section">
+          <p class="sidebar-label">Premium</p>
+          <button class="nav-item premium-nav-item" data-tab="premium" title="Account"><span class="nav-icon" aria-hidden="true">+</span><span class="nav-text">Account</span></button>
+        </div>
+        </div>
+
+        <div class="sidebar-footer card">
+          <p class="sidebar-footer-title">Vyron Node</p>
+          <p class="sidebar-footer-meta" id="serverCountText">0 total servers</p>
+          <button id="openCreateBtn" class="btn primary full">New Server</button>
+        </div>
+      </aside>
+
+      <main class="workspace">
+        <section id="panelUpdateBanner" class="card panel-update-banner hidden" aria-live="polite">
+          <p id="panelUpdateText">Checking panel version...</p>
+          <div class="panel-update-actions">
+            <button id="panelUpdateBtn" class="btn primary compact" type="button">Update</button>
+          </div>
+        </section>
+
+        <header class="page-header card animate-up">
+          <div class="page-title-wrap">
+            <div class="page-icon">
+              <img src="VyronIcon.png" alt="Vyron" />
+            </div>
+            <div>
+              <p class="eyebrow">Console</p>
+              <h1>Vyron Control Surface</h1>
+              <p class="subtitle">Deploy and manage multiple Minecraft servers from one panel.</p>
+            </div>
+          </div>
+          <div class="topbar-actions">
+            <a class="btn discord-btn" href="https://discord.gg/vaswqPn43S" target="_blank" rel="noopener noreferrer">Discord</a>
+            <button id="donateOpenBtn" class="btn ghost">Donate</button>
+            <button id="logoutBtn" class="btn ghost">Logout</button>
+            <button id="seedBtn" class="btn soft compact">Load Demo</button>
+          </div>
+        </header>
+        <section class="stats animate-up delay-2" id="stats"></section>
+
+        <section class="workspace-grid animate-up delay-3">
+          <div class="card console-panel">
+            <div class="panel-header compact-header">
+              <div>
+                <h2>Servers</h2>
+                <p>Manage, start, stop, and restart your network.</p>
+              </div>
+              <div class="inline-actions">
+                <button id="startAllBtn" class="btn soft compact">Start All</button>
+                <button id="stopAllBtn" class="btn soft compact">Stop All</button>
+              </div>
+            </div>
+            <div id="serverList" class="server-list"></div>
+          </div>
+
+          <section class="card server-detail-panel">
+            <div class="panel-header">
+              <div>
+                <h2>Server View</h2>
+                <p>Click a server to inspect placeholders for the full panel.</p>
+              </div>
+              <button id="backToOverviewBtn" class="btn ghost compact" type="button">Back</button>
+            </div>
+
+            <div class="detail-shell">
+              <div class="detail-hero">
+                <div>
+                  <p class="detail-label">Selected Server</p>
+                  <h3 id="detailName">No server selected</h3>
+                  <p id="detailMeta" class="detail-meta">Choose a server from the list to preview its console.</p>
+                </div>
+                <span id="detailBadge" class="badge transition">preview</span>
+              </div>
+
+              <div class="detail-tabs" id="detailTabs">
+                <button class="detail-tab active" data-tab="console">Console</button>
+                <button class="detail-tab" data-tab="chat">Chat</button>
+                <button class="detail-tab" data-tab="errors">Errors</button>
+                <button class="detail-tab" data-tab="warnings">Warnings</button>
+                <button class="detail-tab" data-tab="players">Player Manager</button>
+                <button class="detail-tab" data-tab="files">File Manager</button>
+                <button class="detail-tab" data-tab="config">Config</button>
+                <button class="detail-tab" data-tab="worlds">Worlds</button>
+                <button class="detail-tab" data-tab="addons">Addons</button>
+                <button class="detail-tab" data-tab="logs">Logs</button>
+                <button class="detail-tab" data-tab="network">Network</button>
+                <button class="detail-tab" data-tab="backups">Backups</button>
+                <button class="detail-tab" data-tab="schedules">Schedules</button>
+                <button class="detail-tab" data-tab="monitoring">Monitoring</button>
+                <button class="detail-tab" data-tab="activity">Activity</button>
+              </div>
+
+              <div id="detailContent" class="detail-content"></div>
+            </div>
+          </section>
+
+          <aside class="card side-panel">
+            <div class="panel-header">
+              <h2>Quick Actions</h2>
+            </div>
+
+            <h3>Java Runtime</h3>
+            <p class="small" id="javaStatusText">Checking Java status...</p>
+            <div class="quick-actions">
+              <button id="refreshJavaBtn" class="btn ghost full" type="button">Refresh Java Status</button>
+              <button id="installJavaBtn" class="btn primary full" type="button">Install Java 17</button>
+            </div>
+          </aside>
+        </section>
+      </main>
+    </div>
+
+    <dialog id="serverModal" class="modal">
+      <form method="dialog" class="modal-card" id="serverForm">
+        <div class="panel-header">
+          <h2 id="modalTitle">Create Server</h2>
+          <button class="close-btn" id="closeModalBtn" value="cancel" aria-label="Close modal">X</button>
+        </div>
+
+        <section id="creationKindStep" class="creation-kind-step">
+          <div class="creation-kind-heading">
+            <p class="eyebrow">Choose what to create</p>
+            <h3>Start a new service</h3>
+            <p>Select a Minecraft server, network proxy, or dedicated Simple Voice Chat proxy.</p>
+          </div>
+          <div class="creation-kind-grid">
+            <button class="creation-kind-card" type="button" data-creation-kind="minecraft">
+              <span class="creation-kind-icon minecraft" aria-hidden="true">M</span>
+              <span class="creation-kind-copy">
+                <strong>Minecraft Server</strong>
+                <small>Create a Paper, Vanilla, Fabric, Forge, or custom Minecraft server.</small>
+              </span>
+              <span class="creation-kind-arrow" aria-hidden="true">&rsaquo;</span>
+            </button>
+            <button class="creation-kind-card" type="button" data-creation-kind="voice-proxy">
+              <span class="creation-kind-icon voice" aria-hidden="true">VC</span>
+              <span class="creation-kind-copy">
+                <strong>Simple Voice Chat Proxy</strong>
+                <small>Run a dedicated proxy with the Simple Voice Chat proxy plugin.</small>
+              </span>
+              <span class="creation-kind-arrow" aria-hidden="true">&rsaquo;</span>
+            </button>
+            <button class="creation-kind-card" type="button" data-creation-kind="service-proxy">
+              <span class="creation-kind-icon proxy" aria-hidden="true"><img src="Proxy_Icon.png" alt="" /></span>
+              <span class="creation-kind-copy">
+                <strong>Server Proxy</strong>
+                <small>Create a Velocity, BungeeCord, or custom proxy for your Minecraft network.</small>
+              </span>
+              <span class="creation-kind-arrow" aria-hidden="true">&rsaquo;</span>
+            </button>
+          </div>
+        </section>
+
+        <section id="serverConfigStep" class="hidden">
+        <div class="fields">
+          <label>
+            Name
+            <input type="text" name="name" placeholder="Skyblock EU-1" required />
+          </label>
+
+          <label id="serverLoaderField">
+            Loader
+            <select name="loader" required>
+              <option value="vanilla">Vanilla</option>
+              <option value="paper" selected>Paper</option>
+              <option value="purpur">Purpur</option>
+              <option value="fabric">Fabric</option>
+              <option value="forge">Forge</option>
+              <option value="quilt">Quilt</option>
+              <option value="neoforge">NeoForge</option>
+              <option value="folia">Folia</option>
+              <option value="custom">Custom (Upload JAR)</option>
+            </select>
+          </label>
+
+          <label id="serverVersionField">
+            Minecraft Version
+            <select name="mcVersion" required>
+              <option value="1.21.11" selected>1.21.11 (Latest)</option>
+              <option value="1.21.10">1.21.10</option>
+              <option value="1.21.9">1.21.9</option>
+              <option value="1.21.8">1.21.8</option>
+              <option value="1.21.7">1.21.7</option>
+              <option value="1.21.6">1.21.6</option>
+              <option value="1.21.5">1.21.5</option>
+              <option value="1.21.4">1.21.4</option>
+              <option value="1.21.3">1.21.3</option>
+              <option value="1.21.2">1.21.2</option>
+              <option value="1.21.1">1.21.1</option>
+              <option value="1.21.0">1.21.0</option>
+              <option value="1.20.6">1.20.6</option>
+              <option value="1.20.5">1.20.5</option>
+              <option value="1.20.4">1.20.4</option>
+              <option value="1.20.3">1.20.3</option>
+              <option value="1.20.2">1.20.2</option>
+              <option value="1.20.1">1.20.1</option>
+              <option value="1.20.0">1.20.0</option>
+              <option value="1.19.4">1.19.4</option>
+              <option value="1.19.3">1.19.3</option>
+              <option value="1.19.2">1.19.2</option>
+              <option value="1.19.1">1.19.1</option>
+              <option value="1.19.0">1.19.0</option>
+              <option value="1.18.2">1.18.2</option>
+              <option value="1.18.1">1.18.1</option>
+              <option value="1.18.0">1.18.0</option>
+              <option value="1.17.1">1.17.1</option>
+              <option value="1.17.0">1.17.0</option>
+              <option value="1.16.5">1.16.5</option>
+              <option value="1.16.4">1.16.4</option>
+              <option value="1.16.3">1.16.3</option>
+              <option value="1.16.2">1.16.2</option>
+              <option value="1.16.1">1.16.1</option>
+              <option value="1.16.0">1.16.0</option>
+              <option value="1.15.2">1.15.2</option>
+              <option value="1.15.1">1.15.1</option>
+              <option value="1.15.0">1.15.0</option>
+              <option value="1.14.4">1.14.4</option>
+              <option value="1.14.3">1.14.3</option>
+              <option value="1.14.2">1.14.2</option>
+              <option value="1.14.1">1.14.1</option>
+              <option value="1.14.0">1.14.0</option>
+              <option value="1.13.2">1.13.2</option>
+              <option value="1.13.1">1.13.1</option>
+              <option value="1.13.0">1.13.0</option>
+              <option value="1.12.2">1.12.2</option>
+              <option value="1.12.1">1.12.1</option>
+              <option value="1.12.0">1.12.0</option>
+              <option value="1.11.2">1.11.2</option>
+              <option value="1.11.1">1.11.1</option>
+              <option value="1.11.0">1.11.0</option>
+              <option value="1.10.2">1.10.2</option>
+              <option value="1.10.1">1.10.1</option>
+              <option value="1.10.0">1.10.0</option>
+              <option value="1.9.4">1.9.4</option>
+              <option value="1.9.3">1.9.3</option>
+              <option value="1.9.2">1.9.2</option>
+              <option value="1.9.1">1.9.1</option>
+              <option value="1.9.0">1.9.0</option>
+              <option value="1.8.9">1.8.9</option>
+              <option value="1.8.8">1.8.8</option>
+              <option value="1.8.7">1.8.7</option>
+              <option value="1.8.6">1.8.6</option>
+              <option value="1.8.5">1.8.5</option>
+              <option value="1.8.4">1.8.4</option>
+              <option value="1.8.3">1.8.3</option>
+              <option value="1.8.2">1.8.2</option>
+              <option value="1.8.1">1.8.1</option>
+              <option value="1.8.0">1.8.0</option>
+              <option value="1.7.10">1.7.10</option>
+              <option value="1.7.9">1.7.9</option>
+              <option value="1.7.8">1.7.8</option>
+              <option value="1.7.7">1.7.7</option>
+              <option value="1.7.6">1.7.6</option>
+              <option value="1.7.5">1.7.5</option>
+              <option value="1.7.4">1.7.4</option>
+              <option value="1.7.3">1.7.3</option>
+              <option value="1.7.2">1.7.2</option>
+              <option value="1.6.4">1.6.4</option>
+              <option value="1.6.3">1.6.3</option>
+              <option value="1.6.2">1.6.2</option>
+              <option value="1.6.1">1.6.1</option>
+              <option value="1.5.2">1.5.2</option>
+              <option value="1.5.1">1.5.1</option>
+              <option value="1.4.7">1.4.7</option>
+              <option value="1.4.6">1.4.6</option>
+              <option value="1.4.5">1.4.5</option>
+              <option value="1.4.4">1.4.4</option>
+              <option value="1.4.3">1.4.3</option>
+              <option value="1.4.2">1.4.2</option>
+              <option value="1.3.2">1.3.2</option>
+              <option value="1.3.1">1.3.1</option>
+              <option value="1.2.5">1.2.5</option>
+              <option value="1.2.4">1.2.4</option>
+              <option value="1.2.3">1.2.3</option>
+              <option value="1.2.2">1.2.2</option>
+              <option value="1.2.1">1.2.1</option>
+              <option value="1.1.0">1.1.0</option>
+              <option value="1.0.0">1.0.0 (First Release)</option>
+            </select>
+          </label>
+
+          <label>
+            Port
+            <input type="number" min="1" max="65535" name="port" placeholder="25565" required />
+          </label>
+
+          <label>
+            RAM (GB)
+            <input type="number" min="1" max="64" name="ramGb" placeholder="8" required />
+          </label>
+
+          <label class="setting-toggle">
+            <span class="toggle-text">Auto-start this server when the panel/host restarts</span>
+            <span class="toggle-switch">
+              <input class="toggle-input" type="checkbox" name="autoStart" checked />
+              <span class="toggle-track"></span>
+              <span class="toggle-knob"></span>
+            </span>
+          </label>
+
+          <label id="customJarField" class="hidden">
+            <span id="customJarLabel">Custom Server Jar</span>
+            <input id="customJarInput" type="file" accept=".jar,application/java-archive" />
+          </label>
+
+          <label id="voiceProxyPluginField" class="hidden">
+            Simple Voice Chat Proxy Plugin JAR
+            <input id="voiceProxyPluginInput" type="file" accept=".jar,application/java-archive" />
+          </label>
+        </div>
+
+        <p id="formError" class="error"></p>
+
+        <div class="modal-actions">
+          <button id="creationBackBtn" class="btn ghost hidden" type="button">Back</button>
+          <button class="btn ghost" value="cancel">Cancel</button>
+          <button class="btn primary" type="submit" id="saveServerBtn">Save Server</button>
+        </div>
+        </section>
+      </form>
+    </dialog>
+
+    <section id="serverOnboardingOverlay" class="editor-overlay hidden" aria-modal="true" role="dialog" aria-labelledby="serverOnboardingTitle">
+      <div class="server-onboarding-shell">
+        <div id="serverOnboardingUsernameStep" class="server-onboarding-step">
+          <p class="eyebrow">One last step</p>
+          <h2 id="serverOnboardingTitle">Your Minecraft Username</h2>
+          <p class="muted">This player will receive operator permissions when the server is ready.</p>
+          <form id="serverOnboardingForm" class="fields">
+            <label>
+              Minecraft Username
+              <input id="serverOnboardingUsername" type="text" minlength="3" maxlength="16" pattern="[A-Za-z0-9_]{3,16}" autocomplete="off" placeholder="Steve" required />
+            </label>
+            <label class="server-onboarding-eula">
+              <input id="serverOnboardingEula" type="checkbox" required />
+              <span class="server-onboarding-eula-check" aria-hidden="true"></span>
+              <span class="server-onboarding-eula-copy">
+                <strong>Accept Minecraft EULA</strong>
+                <small>I have read and agree to Mojang's server terms.</small>
+              </span>
+              <a class="server-onboarding-eula-link" href="https://www.minecraft.net/en-us/eula" target="_blank" rel="noreferrer">Read EULA</a>
+            </label>
+            <p id="serverOnboardingFormError" class="error"></p>
+            <div class="modal-actions">
+              <button id="serverOnboardingSkipBtn" class="btn ghost" type="button">Not now</button>
+              <button class="btn primary" type="submit">Start Server</button>
+            </div>
+          </form>
+        </div>
+
+        <div id="serverOnboardingProgressStep" class="server-onboarding-step hidden">
+          <p id="serverOnboardingProgressEyebrow" class="eyebrow">Server setup</p>
+          <h2 id="serverOnboardingProgressTitle">Starting your server</h2>
+          <div id="serverOnboardingStatusList" class="server-onboarding-status"></div>
+          <div class="server-onboarding-wait-game">
+            <span>Waiting for the server?</span>
+            <button id="serverOnboardingSnakeBtn" class="btn ghost compact" type="button">Play Snake</button>
+          </div>
+          <div id="serverOnboardingAddress" class="server-onboarding-address hidden">
+            <span id="serverOnboardingAddressLabel">Internal Server Address</span>
+            <div><code id="serverOnboardingAddressValue"></code><button id="serverOnboardingCopyBtn" class="btn tiny" type="button">Copy</button></div>
+          </div>
+          <p id="serverOnboardingProgressError" class="error"></p>
+          <div class="modal-actions">
+            <button id="serverOnboardingRetryBtn" class="btn ghost hidden" type="button">Retry</button>
+            <button id="serverOnboardingContinueBtn" class="btn primary hidden" type="button">Continue to Dashboard</button>
+          </div>
+        </div>
+
+        <section id="serverOnboardingSnakePanel" class="onboarding-snake-panel hidden" aria-label="Snake game">
+          <header>
+            <div>
+              <p class="eyebrow">Waiting game</p>
+              <h3>Snake</h3>
+            </div>
+            <div class="onboarding-snake-header-actions">
+              <span id="serverOnboardingSnakeScore">Score 0</span>
+              <button id="serverOnboardingSnakeCloseBtn" class="btn ghost compact" type="button" aria-label="Close Snake">Close</button>
+            </div>
+          </header>
+          <div class="onboarding-snake-board-wrap">
+            <canvas id="serverOnboardingSnakeCanvas" width="320" height="320" tabindex="0" aria-label="Snake board"></canvas>
+            <div id="serverOnboardingSnakeMessage" class="onboarding-snake-message hidden">
+              <strong>Game over</strong>
+              <button id="serverOnboardingSnakeRestartBtn" class="btn primary compact" type="button">Play again</button>
+            </div>
+          </div>
+          <div class="onboarding-snake-controls" aria-label="Snake controls">
+            <button type="button" data-snake-direction="up" aria-label="Move up">&#8593;</button>
+            <button type="button" data-snake-direction="left" aria-label="Move left">&#8592;</button>
+            <button type="button" data-snake-direction="down" aria-label="Move down">&#8595;</button>
+            <button type="button" data-snake-direction="right" aria-label="Move right">&#8594;</button>
+          </div>
+        </section>
+      </div>
+    </section>
+
+    <template id="serverCardTemplate">
+      <article class="server-card">
+        <div class="server-main">
+          <div>
+            <p class="server-name"></p>
+            <p class="server-meta"></p>
+          </div>
+          <span class="badge"></span>
+        </div>
+
+        <div class="chips"></div>
+
+        <div class="server-footer">
+          <p class="muted"></p>
+          <div class="actions">
+            <button class="btn tiny start-btn">Start</button>
+            <button class="btn tiny stop-btn">Stop</button>
+            <button class="btn tiny restart-btn">Restart</button>
+            <button class="btn tiny ghost edit-btn">Edit</button>
+            <button class="btn tiny danger delete-btn">Delete</button>
+          </div>
+        </div>
+      </article>
+    </template>
+
+    <section id="editorOverlay" class="editor-overlay hidden" aria-modal="true" role="dialog">
+      <div class="editor-overlay-shell">
+        <header class="editor-overlay-header">
+          <div>
+            <p class="eyebrow">File Editor</p>
+            <h3 id="editorPathText">No file opened</h3>
+          </div>
+          <div class="detail-pill-row">
+            <input id="editorUploadInput" type="file" multiple />
+            <button class="btn tiny" data-action="file-upload" id="editorUploadBtn" type="button">Upload</button>
+            <button class="btn tiny" data-action="file-save" id="editorSaveBtn" type="button">Save</button>
+            <button class="btn tiny" data-action="file-download" id="editorDownloadBtn" type="button">Download</button>
+            <button class="btn ghost" id="editorCloseBtn" type="button">Close</button>
+          </div>
+        </header>
+
+        <div id="editorTabsBar" class="editor-tabs"></div>
+        <div id="editorPopupCodeEditor" class="file-code-editor popup"></div>
+      </div>
+    </section>
+
+    <section id="storeOverlay" class="editor-overlay hidden" aria-modal="true" role="dialog">
+      <div class="editor-overlay-shell store-shell">
+        <header class="editor-overlay-header store-market-header">
+          <div>
+            <h3 class="store-title">Addon Store</h3>
+            <p class="store-subtitle">Browse and install projects from Modrinth.</p>
+          </div>
+          <div class="detail-pill-row">
+            <button class="btn ghost" id="storeCloseBtn" type="button">Close</button>
+          </div>
+        </header>
+
+        <div id="storeTabBar" class="store-tab-bar" role="tablist" aria-label="Store categories">
+          <button class="store-tab active" data-store-tab="all" type="button">All</button>
+          <button class="store-tab" data-store-tab="mod" type="button">Mods</button>
+          <button class="store-tab" data-store-tab="plugin" type="button">Plugins</button>
+          <button class="store-tab" data-store-tab="modpack" type="button">Modpacks</button>
+          <button class="store-tab" data-store-tab="datapack" type="button">Datapacks</button>
+          <button class="store-tab" data-store-tab="resourcepack" type="button">Resource Packs</button>
+        </div>
+
+        <div class="store-top-controls">
+          <div class="store-search-wrap">
+            <input id="storeQueryInput" type="search" placeholder="Search all addons..." />
+          </div>
+          <select id="storeSortSelect" class="store-provider-select" aria-label="Sort projects">
+            <option value="downloads" selected>Most downloaded</option>
+            <option value="updated">Recently updated</option>
+            <option value="newest">Newest</option>
+            <option value="relevance">Relevance</option>
+          </select>
+          <button class="btn tiny" id="storeSearchBtn" type="button">Go</button>
+        </div>
+
+        <div class="store-install-row">
+          <label>
+            Loader
+            <select id="storeLoaderSelect"></select>
+          </label>
+          <label>
+            Version
+            <select id="storeVersionSelect"></select>
+          </label>
+          <button class="btn tiny" data-action="store-install-selected" id="storeInstallBtn" type="button">Install Selected</button>
+        </div>
+
+        <p id="storeStatusText" class="muted store-status-text"></p>
+        <div id="storeResultsGrid" class="store-grid store-market-grid"></div>
+        <nav id="storePagination" class="store-pagination" aria-label="Addon Store pages">
+          <button class="btn tiny store-page-button" data-action="store-page-prev" id="storePrevPageBtn" type="button" aria-label="Previous page" title="Previous page">&lsaquo;</button>
+          <span id="storeResultRange" class="store-result-range">0 projects</span>
+          <label class="store-page-jump">
+            <span>Page</span>
+            <input id="storePageInput" type="number" min="1" value="1" inputmode="numeric" aria-label="Page number" />
+            <span id="storePageCount">of 1</span>
+          </label>
+          <button class="btn tiny store-page-button" data-action="store-page-next" id="storeNextPageBtn" type="button" aria-label="Next page" title="Next page">&rsaquo;</button>
+        </nav>
+
+        <section id="storeProjectDetail" class="store-project-detail hidden" aria-label="Project details">
+          <header class="store-project-detail-header">
+            <button class="btn ghost" data-action="store-detail-close" type="button">Back</button>
+            <div id="storeProjectDetailActions" class="detail-pill-row"></div>
+          </header>
+          <div id="storeProjectDetailContent" class="store-project-detail-content"></div>
+        </section>
+      </div>
+    </section>
+
+    <section id="playerOverlay" class="editor-overlay hidden" aria-modal="true" role="dialog">
+      <div class="editor-overlay-shell player-shell">
+        <header class="editor-overlay-header player-header">
+          <div>
+            <p class="eyebrow">Player Manager</p>
+            <h3 id="playerPopupTitle">Player Details</h3>
+            <p id="playerPopupMeta" class="muted" style="margin:4px 0 0 0;"></p>
+          </div>
+          <div class="detail-pill-row">
+            <button class="btn ghost" id="playerCloseBtn" type="button">Close</button>
+          </div>
+        </header>
+
+        <div class="detail-grid" style="margin-top:6px;">
+          <div class="detail-card">
+            <h4>Status</h4>
+            <div id="playerStatsGrid" class="player-stats-grid"></div>
+            <h4 style="margin-top:12px;">Effects</h4>
+            <div class="fields" style="margin-bottom:8px;">
+              <label>
+                Effect
+                <select id="playerEffectSelect"></select>
+              </label>
+              <label>
+                Duration (sec)
+                <input id="playerEffectDuration" type="number" min="1" value="60" />
+              </label>
+              <label>
+                Amplifier
+                <input id="playerEffectAmplifier" type="number" min="0" value="1" />
+              </label>
+              <label>
+                Reason / Note
+                <input id="playerActionReason" type="text" placeholder="Optional reason for kick/ban" />
+              </label>
+            </div>
+            <div class="detail-pill-row">
+              <button class="btn tiny" data-action="player-popup-effect">Apply Effect</button>
+              <button class="btn tiny" data-action="player-popup-clear-effects">Clear Effects</button>
+            </div>
+            <ul id="playerEffectsList" class="list-tight" style="margin-top:10px;"></ul>
+          </div>
+
+          <div class="detail-card">
+            <h4>Player Actions</h4>
+            <div class="detail-pill-row" style="margin-bottom:10px;">
+              <button class="btn tiny" data-action="player-popup-op">OP</button>
+              <button class="btn tiny" data-action="player-popup-deop">DEOP</button>
+              <button class="btn tiny" data-action="player-popup-kick">Kick</button>
+              <button class="btn tiny" data-action="player-popup-ban">Ban</button>
+              <button class="btn tiny" data-action="player-popup-unban">Unban</button>
+              <button class="btn tiny" data-action="player-popup-refresh">Refresh</button>
+            </div>
+            <h4>Inventory</h4>
+            <p id="playerInventorySource" class="muted" style="margin:0 0 8px 0;"></p>
+            <div id="playerInventoryGrid" class="player-inventory-grid"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div id="fileContextMenu" class="file-context-menu hidden" role="menu" aria-label="File actions">
+      <button type="button" role="menuitem" data-file-context-action="download">Download</button>
+      <button type="button" role="menuitem" data-file-context-action="rename">Rename</button>
+      <button type="button" role="menuitem" class="danger" data-file-context-action="delete">Delete</button>
+    </div>
+
+    <div id="addonContextMenu" class="file-context-menu hidden" role="menu" aria-label="Plugin actions">
+      <button type="button" role="menuitem" class="danger" data-addon-context-action="delete">Delete</button>
+    </div>
+
+    <div id="worldContextMenu" class="file-context-menu hidden" role="menu" aria-label="World actions">
+      <button type="button" role="menuitem" data-world-context-action="open">Open in Files</button>
+      <button type="button" role="menuitem" data-world-context-action="edit">Edit Name / Seed</button>
+      <button type="button" role="menuitem" data-world-context-action="duplicate">Duplicate</button>
+      <button type="button" role="menuitem" data-world-context-action="export">Export as ZIP</button>
+      <button type="button" role="menuitem" class="danger" data-world-context-action="delete">Delete</button>
+    </div>
+
+    <div id="serverContextMenu" class="file-context-menu hidden" role="menu" aria-label="Server actions">
+      <button type="button" role="menuitem" data-server-context-action="duplicate">Duplicate Server</button>
+      <button type="button" role="menuitem" data-server-context-action="export">Export as ZIP</button>
+      <button type="button" role="menuitem" data-server-context-action="import">Import Server ZIP</button>
+    </div>
+    <input id="serverImportInput" class="hidden" type="file" accept=".zip,application/zip" />
+    <input id="worldImportInput" class="hidden" type="file" accept=".zip,application/zip" />
+
+    <div class="corner-status-stack">
+      <section id="uploadQueuePanel" class="upload-queue-panel hidden" aria-label="Upload queue">
+        <header><strong>Uploads</strong><button id="uploadQueueClearBtn" type="button">Clear</button></header>
+        <div id="uploadQueueList" class="upload-queue-list"></div>
+      </section>
+      <div id="toastRegion" class="toast-region" aria-live="polite" aria-atomic="false"></div>
+    </div>
+
+    <section id="donateOverlayPanel" class="editor-overlay hidden" aria-modal="true" role="dialog">
+      <div class="editor-overlay-shell donate-shell">
+        <button class="donate-close-btn" id="donateCloseBtn" type="button" aria-label="Close donate popup">x</button>
+        <iframe id="panelDonateFrame" data-src="https://ko-fi.com/dercooleo_o/?hidefeed=true&widget=true&embed=true&preview=true" style="border:none;width:100%;padding:4px;background:#f9f9f9;" height="712" title="dercooleo_o" loading="lazy" sandbox="allow-scripts allow-forms allow-same-origin allow-popups allow-top-navigation-by-user-activation"></iframe>
+      </div>
+    </section>
+
+    <section id="cookieConsent" class="cookie-consent hidden" aria-label="Cookie preferences">
+      <div><strong>Cookie preferences</strong><p>Vyron uses necessary cookies for login and panel security. Optional cookies can help improve the service.</p></div>
+      <div class="cookie-actions"><button id="cookieNecessaryBtn" class="btn ghost" type="button">Necessary only</button><button id="cookieAcceptBtn" class="btn primary" type="button">Accept all</button></div>
+    </section>
+
+    <dialog id="eulaModal" class="modal">
+      <form method="dialog" class="modal-card">
+        <div class="modal-header">
+          <h2>End User License Agreement (EULA)</h2>
+          <button class="close-btn" type="button" aria-label="Close modal">X</button>
+        </div>
+        <div class="modal-body eula-body">
+          <p><strong>Minecraft Server EULA</strong></p>
+          <p>By creating and running a Minecraft server, you agree to the Mojang Studios End User License Agreement.</p>
+          <p>The server software is provided "as is". You are responsible for the server and any content on it.</p>
+          <p>Commercial use of the server is allowed, but you must comply with the Minecraft EULA terms:</p>
+          <ul>
+            <li>You cannot charge players to join or for in-game benefits</li>
+            <li>You cannot claim ownership of the game or its intellectual property</li>
+            <li>You must respect player privacy and data protection laws</li>
+            <li>You are responsible for maintaining the server and its security</li>
+          </ul>
+          <p><strong>By accepting this agreement, you confirm that you have read and agree to the Minecraft EULA.</strong></p>
+          <p>For the full EULA, visit: <a href="https://www.minecraft.net/en-us/eula" target="_blank">https://www.minecraft.net/en-us/eula</a></p>
+        </div>
+        <div class="modal-actions">
+          <button class="btn secondary" id="eulaDeclineBtn" type="button">Decline</button>
+          <button class="btn primary" id="eulaAcceptBtn" type="button">Accept & Start Server</button>
+        </div>
+      </form>
+    </dialog>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.9/ace.js" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.9/ext-language_tools.min.js" defer></script>
+    <script src="app.js" defer></script>
+  </body>
+</html>
