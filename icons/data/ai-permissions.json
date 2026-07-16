@@ -1,0 +1,12 @@
+{
+  "default": {
+    "viewConsole": true,
+    "viewPlayers": true,
+    "viewFiles": true,
+    "viewConfig": true,
+    "manageLifecycle": false,
+    "sendConsoleCommands": false,
+    "managePlayers": false
+  },
+  "users": {}
+}
