@@ -44,7 +44,7 @@ Then open:
 
 - LAN URL example: `http://192.168.0.19:4170/installer.sh`
 - Local dev URL: `http://localhost:4170/installer.sh`
-- Full setup guide: `https://docs.vyronpanel.com`
+- Full setup guide: https://docs.vyronpanel.com
 
 ## Authentication
 
