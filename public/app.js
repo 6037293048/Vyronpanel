@@ -125,8 +125,10 @@ const eulaAcceptBtn = document.getElementById("eulaAcceptBtn");
 const eulaDeclineBtn = document.getElementById("eulaDeclineBtn");
 const fileContextMenuEl = document.getElementById("fileContextMenu");
 const addonContextMenuEl = document.getElementById("addonContextMenu");
+const worldContextMenuEl = document.getElementById("worldContextMenu");
 const serverContextMenuEl = document.getElementById("serverContextMenu");
 const serverImportInput = document.getElementById("serverImportInput");
+const worldImportInput = document.getElementById("worldImportInput");
 const toastRegionEl = document.getElementById("toastRegion");
 const uploadQueuePanelEl = document.getElementById("uploadQueuePanel");
 const uploadQueueListEl = document.getElementById("uploadQueueList");
@@ -214,6 +216,7 @@ let storeLikedProjects = loadStoreLikes();
 let fileManagerState = { path: "", entries: [] };
 let fileContextState = { path: "", kind: "file" };
 let addonContextState = { id: "", name: "" };
+let worldContextState = { name: "", seed: "" };
 let serverContextState = { id: "", name: "" };
 let premiumState = { loading: false, error: "", account: null };
 let uploadQueue = [];
@@ -1170,6 +1173,63 @@ async function removeWorld(server, worldName) {
   });
 }
 
+async function editWorldInteractive(server, currentName, currentSeed = "") {
+  const nextName = window.prompt("World name", currentName);
+  if (nextName === null) return false;
+
+  const nextSeed = window.prompt("Custom seed (optional, leave blank to clear)", currentSeed);
+  if (nextSeed === null) return false;
+
+  await updateWorld(server, currentName, nextName, nextSeed);
+  await loadWorlds(server.id);
+  renderDetail();
+  showToast("World updated");
+  return true;
+}
+
+async function duplicateWorld(server, worldName) {
+  const newName = String(window.prompt("Name for the duplicated world", `${worldName}_copy`) || "").trim();
+  if (!newName) return;
+  await api(`/api/servers/${server.id}/worlds/duplicate`, {
+    method: "POST",
+    body: JSON.stringify({ name: worldName, newName })
+  });
+  await loadWorlds(server.id);
+  renderDetail();
+  showToast("World duplicated");
+}
+
+function exportWorld(server, worldName) {
+  const link = document.createElement("a");
+  link.href = `/api/servers/${encodeURIComponent(server.id)}/worlds/export?name=${encodeURIComponent(worldName)}`;
+  link.download = `${worldName}.zip`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  showToast("World export started");
+}
+
+async function importWorldArchive(server, file) {
+  if (!file || !String(file.name || "").toLowerCase().endsWith(".zip")) {
+    throw new Error("Choose a Minecraft world .zip file.");
+  }
+  const requestedName = window.prompt("Imported world name", String(file.name).replace(/\.zip$/i, ""));
+  if (requestedName === null) return;
+  const form = new FormData();
+  form.append("world", file);
+  form.append("name", requestedName.trim());
+  const response = await fetch(`/api/servers/${encodeURIComponent(server.id)}/worlds/import`, {
+    method: "POST",
+    body: form,
+    credentials: "same-origin"
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(payload.error || "World import failed.");
+  await loadWorlds(server.id);
+  renderDetail();
+  showToast(payload.restartRequired ? "World imported - restart the server to use it" : "World imported");
+}
+
 async function uploadCustomJar(serverId, file) {
   if (!serverId || !file) {
     return;
@@ -1642,11 +1702,10 @@ function renderDetail() {
         .map((world) => {
           const worldName = String(world?.name || "");
           const worldSeed = String(world?.seed || "");
-          return `<li>${escapeHtml(worldName)}${worldSeed ? ` <span class="muted">(seed: ${escapeHtml(worldSeed)})</span>` : ""}
-            <div class="detail-pill-row" style="margin-top:6px;">
-              <button class="btn tiny" data-action="world-edit" data-world-name="${escapeAttr(worldName)}" data-world-seed="${escapeAttr(worldSeed)}">Edit</button>
-              <button class="btn tiny danger" data-action="world-delete" data-world-name="${escapeAttr(worldName)}">Delete</button>
-            </div>
+          return `<li class="world-entry-row" data-world-name="${escapeAttr(worldName)}" data-world-seed="${escapeAttr(worldSeed)}" title="Right-click for world actions">
+            <span class="world-entry-icon" aria-hidden="true">◎</span>
+            <span class="world-entry-copy"><strong>${escapeHtml(worldName)}</strong>${worldSeed ? `<small>Seed: ${escapeHtml(worldSeed)}</small>` : "<small>Minecraft world</small>"}</span>
+            <button class="world-more-button" type="button" data-action="world-menu" data-world-name="${escapeAttr(worldName)}" data-world-seed="${escapeAttr(worldSeed)}" title="World actions" aria-label="Actions for ${escapeAttr(worldName)}">⋮</button>
           </li>`;
         })
         .join("")
@@ -2060,7 +2119,7 @@ function renderDetail() {
       <div class="detail-grid">
         <div class="detail-card">
           <h4>Worlds</h4>
-          <ul class="list-tight">${worldsMarkup}</ul>
+          <ul class="list-tight world-list">${worldsMarkup}</ul>
         </div>
         <div class="detail-card">
           <h4>World Actions</h4>
@@ -2076,6 +2135,7 @@ function renderDetail() {
           </div>
           <div class="detail-pill-row">
             <button class="btn tiny" data-action="world-add">Add World</button>
+            <button class="btn tiny" data-action="world-import">Import World ZIP</button>
             <button class="btn tiny" data-action="refresh-worlds">Refresh Worlds</button>
             <button class="btn tiny" data-action="create-backup">Create Backup</button>
           </div>
@@ -4451,6 +4511,11 @@ function hideAddonContextMenu() {
   addonContextState = { id: "", name: "" };
 }
 
+function hideWorldContextMenu() {
+  worldContextMenuEl?.classList.add("hidden");
+  worldContextState = { name: "", seed: "" };
+}
+
 function hideServerContextMenu() {
   serverContextMenuEl?.classList.add("hidden");
   serverContextState = { id: "", name: "" };
@@ -4461,6 +4526,7 @@ function showFileContextMenu(event, pathValue, kind) {
     return;
   }
   hideAddonContextMenu();
+  hideWorldContextMenu();
   fileContextState = { path: pathValue, kind: kind || "file" };
   const downloadButton = fileContextMenuEl.querySelector('[data-file-context-action="download"]');
   if (downloadButton) {
@@ -4482,6 +4548,7 @@ function showAddonContextMenu(event, addonId, addonName) {
     return;
   }
   hideFileContextMenu();
+  hideWorldContextMenu();
   addonContextState = { id: addonId, name: addonName || "Addon" };
   addonContextMenuEl.classList.remove("hidden");
   addonContextMenuEl.style.left = "0px";
@@ -4492,10 +4559,26 @@ function showAddonContextMenu(event, addonId, addonName) {
   addonContextMenuEl.querySelector("button")?.focus();
 }
 
+function showWorldContextMenu(event, worldName, worldSeed = "") {
+  if (!worldContextMenuEl || !worldName) return;
+  hideFileContextMenu();
+  hideAddonContextMenu();
+  hideServerContextMenu();
+  worldContextState = { name: worldName, seed: worldSeed };
+  worldContextMenuEl.classList.remove("hidden");
+  worldContextMenuEl.style.left = "0px";
+  worldContextMenuEl.style.top = "0px";
+  const rect = worldContextMenuEl.getBoundingClientRect();
+  worldContextMenuEl.style.left = `${Math.max(8, Math.min(event.clientX, window.innerWidth - rect.width - 8))}px`;
+  worldContextMenuEl.style.top = `${Math.max(8, Math.min(event.clientY, window.innerHeight - rect.height - 8))}px`;
+  worldContextMenuEl.querySelector("button")?.focus();
+}
+
 function showServerContextMenu(event, server) {
   if (!serverContextMenuEl || !server) return;
   hideFileContextMenu();
   hideAddonContextMenu();
+  hideWorldContextMenu();
   serverContextState = { id: server.id, name: server.name };
   serverContextMenuEl.classList.remove("hidden");
   serverContextMenuEl.style.left = "0px";
@@ -5097,6 +5180,19 @@ async function handleDetailAction(actionName, buttonEl = null) {
     return;
   }
 
+  if (actionName === "world-import") {
+    worldImportInput?.click();
+    return;
+  }
+
+  if (actionName === "world-menu") {
+    const worldName = String(buttonEl?.dataset?.worldName || "").trim();
+    const worldSeed = String(buttonEl?.dataset?.worldSeed || "").trim();
+    const rect = buttonEl.getBoundingClientRect();
+    showWorldContextMenu({ clientX: rect.right, clientY: rect.bottom }, worldName, worldSeed);
+    return;
+  }
+
   if (actionName === "world-edit") {
     const currentName = String(buttonEl?.dataset?.worldName || "").trim();
     const currentSeed = String(buttonEl?.dataset?.worldSeed || "").trim();
@@ -5104,19 +5200,7 @@ async function handleDetailAction(actionName, buttonEl = null) {
       throw new Error("Missing world name.");
     }
 
-    const nextName = window.prompt("World name", currentName);
-    if (nextName === null) {
-      return;
-    }
-
-    const nextSeed = window.prompt("Custom seed (optional, leave blank to clear)", currentSeed);
-    if (nextSeed === null) {
-      return;
-    }
-
-    await updateWorld(server, currentName, nextName, nextSeed);
-    await loadWorlds(server.id);
-    renderDetail();
+    await editWorldInteractive(server, currentName, currentSeed);
     return;
   }
 
@@ -5685,6 +5769,12 @@ storeSortSelect?.addEventListener("change", async () => {
   }
 });
 detailContentEl.addEventListener("contextmenu", (event) => {
+  const worldEntry = event.target.closest('.world-entry-row[data-world-name]');
+  if (worldEntry) {
+    event.preventDefault();
+    showWorldContextMenu(event, worldEntry.dataset.worldName || "", worldEntry.dataset.worldSeed || "");
+    return;
+  }
   const fileEntry = event.target.closest('.file-entry-row[data-path]');
   if (fileEntry) {
     event.preventDefault();
@@ -5699,6 +5789,7 @@ detailContentEl.addEventListener("contextmenu", (event) => {
   }
   hideFileContextMenu();
   hideAddonContextMenu();
+  hideWorldContextMenu();
 });
 detailContentEl.addEventListener("dragover", (event) => {
   if (!Array.from(event.dataTransfer?.types || []).includes("Files")) {
@@ -5784,6 +5875,36 @@ addonContextMenuEl?.addEventListener("click", async (event) => {
     window.alert(error.message || "Plugin action failed.");
   }
 });
+worldContextMenuEl?.addEventListener("click", async (event) => {
+  const button = event.target.closest("[data-world-context-action]");
+  if (!button) return;
+  const action = String(button.dataset.worldContextAction || "");
+  const target = { ...worldContextState };
+  const server = getSelectedServer();
+  hideWorldContextMenu();
+  if (!server || !target.name) return;
+
+  try {
+    if (action === "open") {
+      fileManagerState.path = target.name;
+      setSelectedTab("files");
+    } else if (action === "edit") {
+      await editWorldInteractive(server, target.name, target.seed);
+    } else if (action === "duplicate") {
+      await duplicateWorld(server, target.name);
+    } else if (action === "export") {
+      exportWorld(server, target.name);
+    } else if (action === "delete") {
+      if (!window.confirm(`Delete world "${target.name}"? This cannot be undone.`)) return;
+      await removeWorld(server, target.name);
+      await loadWorlds(server.id);
+      renderDetail();
+      showToast("World deleted");
+    }
+  } catch (error) {
+    window.alert(error.message || "World action failed.");
+  }
+});
 serverContextMenuEl?.addEventListener("click", async (event) => {
   const button = event.target.closest("[data-server-context-action]");
   if (!button) return;
@@ -5821,6 +5942,14 @@ serverImportInput?.addEventListener("change", async () => {
   try { await importServerArchive(file); }
   catch (error) { window.alert(error.message || "Server import failed."); }
 });
+worldImportInput?.addEventListener("change", async () => {
+  const file = worldImportInput.files?.[0];
+  worldImportInput.value = "";
+  const server = getSelectedServer();
+  if (!file || !server) return;
+  try { await importWorldArchive(server, file); }
+  catch (error) { window.alert(error.message || "World import failed."); }
+});
 uploadQueueClearBtn?.addEventListener("click", () => {
   uploadQueue = uploadQueue.filter((item) => item.status === "queued" || item.status === "uploading");
   renderUploadQueue();
@@ -5832,6 +5961,9 @@ document.addEventListener("pointerdown", (event) => {
   if (addonContextMenuEl && !addonContextMenuEl.classList.contains("hidden") && !addonContextMenuEl.contains(event.target)) {
     hideAddonContextMenu();
   }
+  if (worldContextMenuEl && !worldContextMenuEl.classList.contains("hidden") && !worldContextMenuEl.contains(event.target)) {
+    hideWorldContextMenu();
+  }
   if (serverContextMenuEl && !serverContextMenuEl.classList.contains("hidden") && !serverContextMenuEl.contains(event.target)) {
     hideServerContextMenu();
   }
@@ -5839,11 +5971,13 @@ document.addEventListener("pointerdown", (event) => {
 window.addEventListener("resize", () => {
   hideFileContextMenu();
   hideAddonContextMenu();
+  hideWorldContextMenu();
   hideServerContextMenu();
 });
 window.addEventListener("blur", () => {
   hideFileContextMenu();
   hideAddonContextMenu();
+  hideWorldContextMenu();
   hideServerContextMenu();
 });
 storeLoaderSelect?.addEventListener("change", () => {
@@ -6066,6 +6200,10 @@ document.addEventListener("keydown", (event) => {
   }
   if (event.key === "Escape" && fileContextMenuEl && !fileContextMenuEl.classList.contains("hidden")) {
     hideFileContextMenu();
+    return;
+  }
+  if (event.key === "Escape" && worldContextMenuEl && !worldContextMenuEl.classList.contains("hidden")) {
+    hideWorldContextMenu();
     return;
   }
   if (event.key === "Escape" && isEditorPopupOpen()) {

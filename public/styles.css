@@ -1187,6 +1187,76 @@ body.server-route .detail-shell {
   gap: 6px;
 }
 
+.world-list {
+  padding: 0;
+  list-style: none;
+  gap: 8px;
+}
+
+.world-entry-row {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) 32px;
+  align-items: center;
+  min-height: 54px;
+  padding: 8px 8px 8px 10px;
+  border: 1px solid rgba(153, 165, 218, 0.16);
+  border-radius: 7px;
+  background: rgba(12, 14, 24, 0.72);
+}
+
+.world-entry-row:hover {
+  border-color: rgba(90, 129, 255, 0.58);
+  background: rgba(25, 31, 52, 0.8);
+}
+
+.world-entry-icon {
+  color: #78a2ff;
+  font-size: 1.3rem;
+}
+
+.world-entry-copy {
+  min-width: 0;
+}
+
+.world-entry-copy strong,
+.world-entry-copy small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.world-entry-copy strong {
+  color: #edf2ff;
+  font-size: 0.9rem;
+}
+
+.world-entry-copy small {
+  color: #8793ad;
+  font-size: 0.72rem;
+}
+
+.world-more-button {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  color: #aab5cf;
+  background: transparent;
+  font: inherit;
+  font-size: 1.05rem;
+}
+
+.world-more-button:hover,
+.world-more-button:focus-visible {
+  border-color: rgba(90, 129, 255, 0.48);
+  outline: none;
+  color: #f1f5ff;
+  background: rgba(65, 105, 190, 0.24);
+}
+
 .player-row {
   width: 100%;
   border: 1px solid rgba(153, 165, 218, 0.16);

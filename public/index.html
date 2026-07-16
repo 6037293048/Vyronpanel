@@ -679,12 +679,21 @@
       <button type="button" role="menuitem" class="danger" data-addon-context-action="delete">Delete</button>
     </div>
 
+    <div id="worldContextMenu" class="file-context-menu hidden" role="menu" aria-label="World actions">
+      <button type="button" role="menuitem" data-world-context-action="open">Open in Files</button>
+      <button type="button" role="menuitem" data-world-context-action="edit">Edit Name / Seed</button>
+      <button type="button" role="menuitem" data-world-context-action="duplicate">Duplicate</button>
+      <button type="button" role="menuitem" data-world-context-action="export">Export as ZIP</button>
+      <button type="button" role="menuitem" class="danger" data-world-context-action="delete">Delete</button>
+    </div>
+
     <div id="serverContextMenu" class="file-context-menu hidden" role="menu" aria-label="Server actions">
       <button type="button" role="menuitem" data-server-context-action="duplicate">Duplicate Server</button>
       <button type="button" role="menuitem" data-server-context-action="export">Export as ZIP</button>
       <button type="button" role="menuitem" data-server-context-action="import">Import Server ZIP</button>
     </div>
     <input id="serverImportInput" class="hidden" type="file" accept=".zip,application/zip" />
+    <input id="worldImportInput" class="hidden" type="file" accept=".zip,application/zip" />
 
     <div class="corner-status-stack">
       <section id="uploadQueuePanel" class="upload-queue-panel hidden" aria-label="Upload queue">

@@ -134,6 +134,18 @@ function receiveResourcePack(req, res, next) {
   });
 }
 
+function receiveWorldArchive(req, res, next) {
+  importUpload.single("world")(req, res, (error) => {
+    if (!error) {
+      return next();
+    }
+    if (error instanceof multer.MulterError && error.code === "LIMIT_FILE_SIZE") {
+      return res.status(400).json({ error: "The world archive cannot be larger than 8 GB." });
+    }
+    return res.status(400).json({ error: error.message || "Could not receive the world archive." });
+  });
+}
+
 function getAiMemory(pendingKey) {
   const existing = runtimeAiMemory.get(pendingKey);
   if (existing) {
@@ -589,13 +601,41 @@ function isReservedWorldDirName(name) {
     "mods",
     "datapacks",
     "modpacks",
+    "resourcepacks",
+    "shaderpacks",
+    "versions",
     "backups",
     "logs",
     "crash-reports",
     "config",
     "libraries",
-    "cache"
+    "cache",
+    "assets",
+    "runtime",
+    "server"
   ]).has(String(name || "").toLowerCase());
+}
+
+async function isMinecraftWorldDirectory(worldDir) {
+  for (const marker of ["level.dat", ".vyron-world.json"]) {
+    try {
+      const stat = await fs.stat(path.join(worldDir, marker));
+      if (stat.isFile()) return true;
+    } catch {
+      // Try the next world marker.
+    }
+  }
+  return false;
+}
+
+async function worldDirectoryExists(worldDir) {
+  try {
+    const stat = await fs.stat(worldDir);
+    return stat.isDirectory();
+  } catch (error) {
+    if (error.code === "ENOENT") return false;
+    throw error;
+  }
 }
 
 function parseTpsFromLogLine(line) {
@@ -6087,6 +6127,9 @@ app.get("/api/servers/:id/worlds", async (req, res) => {
     }
 
     const worldDir = path.join(getWorldsRoot(server), entry.name);
+    if (!await isMinecraftWorldDirectory(worldDir)) {
+      continue;
+    }
     let seed = "";
     try {
       const rawMeta = await fs.readFile(getWorldMetaFile(worldDir), "utf8");
@@ -6102,6 +6145,126 @@ app.get("/api/servers/:id/worlds", async (req, res) => {
   worlds.sort((a, b) => a.name.localeCompare(b.name));
 
   return res.json({ worlds });
+});
+
+app.get("/api/servers/:id/worlds/export", async (req, res) => {
+  const { server } = await findServerById(req.params.id);
+  if (!server) return res.status(404).json({ error: "Server not found." });
+
+  const name = sanitizeWorldName(req.query?.name || "");
+  if (!name || isReservedWorldDirName(name)) {
+    return res.status(400).json({ error: "Choose a valid world." });
+  }
+
+  const worldDir = safeJoin(getWorldsRoot(server), name);
+  if (!await isMinecraftWorldDirectory(worldDir)) {
+    return res.status(404).json({ error: "World not found." });
+  }
+
+  res.attachment(`${sanitizeFileName(name) || "minecraft-world"}.zip`);
+  try {
+    await createServerArchive(worldDir, res, null, false);
+  } catch (error) {
+    if (!res.headersSent) res.status(500).json({ error: error.message || "World export failed." });
+    else res.destroy(error);
+  }
+});
+
+app.post("/api/servers/:id/worlds/import", receiveWorldArchive, async (req, res) => {
+  const uploadPath = req.file?.path;
+  if (!uploadPath) return res.status(400).json({ error: "Choose a Minecraft world ZIP to import." });
+
+  const { servers, server } = await findServerById(req.params.id);
+  if (!server) {
+    await fs.rm(uploadPath, { force: true }).catch(() => {});
+    return res.status(404).json({ error: "Server not found." });
+  }
+
+  let stagingDir = "";
+  let destination = "";
+  try {
+    if (!String(req.file.originalname || "").toLowerCase().endsWith(".zip")) {
+      throw new Error("The imported world must be a .zip file.");
+    }
+
+    stagingDir = await fs.mkdtemp(path.join(IMPORTS_DIR, "world-"));
+    await extractZipSafely(uploadPath, stagingDir);
+
+    let sourceDir = stagingDir;
+    let suggestedName = String(req.file.originalname || "world.zip").replace(/\.zip$/i, "");
+    if (!await isMinecraftWorldDirectory(sourceDir)) {
+      const entries = await fs.readdir(stagingDir, { withFileTypes: true });
+      const candidates = [];
+      for (const entry of entries) {
+        if (!entry.isDirectory() || entry.name === "__MACOSX") continue;
+        const candidate = path.join(stagingDir, entry.name);
+        if (await isMinecraftWorldDirectory(candidate)) candidates.push({ name: entry.name, path: candidate });
+      }
+      if (candidates.length !== 1) {
+        throw new Error(candidates.length
+          ? "The ZIP contains multiple worlds. Import one world per archive."
+          : "Invalid Minecraft world: level.dat was not found at the root or in a single top-level folder.");
+      }
+      sourceDir = candidates[0].path;
+      suggestedName = candidates[0].name;
+    }
+
+    const name = sanitizeWorldName(req.body?.name || suggestedName);
+    if (!name || isReservedWorldDirName(name)) {
+      throw new Error("The imported world name is invalid or reserved.");
+    }
+
+    const root = getWorldsRoot(server);
+    await fs.mkdir(root, { recursive: true });
+    destination = safeJoin(root, name);
+    if (await worldDirectoryExists(destination)) {
+      throw new Error(`A world named "${name}" already exists.`);
+    }
+
+    await fs.cp(sourceDir, destination, { recursive: true, errorOnExist: true, force: false });
+    appendTimeline(server, `World imported: ${name}`);
+    server.updatedAt = new Date().toISOString();
+    await writeServers(servers);
+    return res.status(201).json({ world: { name, seed: "" }, restartRequired: Boolean(runtimeProcesses.get(server.id)) });
+  } catch (error) {
+    if (destination) await fs.rm(destination, { recursive: true, force: true }).catch(() => {});
+    return res.status(400).json({ error: error.message || "World import failed." });
+  } finally {
+    await fs.rm(uploadPath, { force: true }).catch(() => {});
+    if (stagingDir) await fs.rm(stagingDir, { recursive: true, force: true }).catch(() => {});
+  }
+});
+
+app.post("/api/servers/:id/worlds/duplicate", async (req, res) => {
+  const { servers, server } = await findServerById(req.params.id);
+  if (!server) return res.status(404).json({ error: "Server not found." });
+
+  const currentName = sanitizeWorldName(req.body?.name || "");
+  const nextName = sanitizeWorldName(req.body?.newName || `${currentName}_copy`);
+  if (!currentName || !nextName || isReservedWorldDirName(nextName)) {
+    return res.status(400).json({ error: "Source and target world names are required." });
+  }
+
+  const root = getWorldsRoot(server);
+  const sourceDir = safeJoin(root, currentName);
+  const targetDir = safeJoin(root, nextName);
+  if (!await isMinecraftWorldDirectory(sourceDir)) {
+    return res.status(404).json({ error: "World not found." });
+  }
+  if (await worldDirectoryExists(targetDir)) {
+    return res.status(409).json({ error: "Target world name already exists." });
+  }
+
+  try {
+    await fs.cp(sourceDir, targetDir, { recursive: true, errorOnExist: true, force: false });
+    appendTimeline(server, `World duplicated: ${currentName} -> ${nextName}`);
+    server.updatedAt = new Date().toISOString();
+    await writeServers(servers);
+    return res.status(201).json({ world: { name: nextName, seed: "" } });
+  } catch (error) {
+    await fs.rm(targetDir, { recursive: true, force: true }).catch(() => {});
+    return res.status(400).json({ error: error.message || "World duplication failed." });
+  }
 });
 
 app.post("/api/servers/:id/worlds", async (req, res) => {
@@ -6153,15 +6316,16 @@ app.patch("/api/servers/:id/worlds", async (req, res) => {
   if (!currentName || !nextName) {
     return res.status(400).json({ error: "Current and target world names are required." });
   }
+  if (isReservedWorldDirName(currentName) || isReservedWorldDirName(nextName)) {
+    return res.status(400).json({ error: "This world name is reserved." });
+  }
 
   const root = getWorldsRoot(server);
   await fs.mkdir(root, { recursive: true });
   const currentDir = safeJoin(root, currentName);
   const nextDir = safeJoin(root, nextName);
 
-  try {
-    await fs.stat(currentDir);
-  } catch {
+  if (!await isMinecraftWorldDirectory(currentDir)) {
     return res.status(404).json({ error: "World not found." });
   }
 
@@ -6191,14 +6355,12 @@ app.delete("/api/servers/:id/worlds", async (req, res) => {
   }
 
   const name = sanitizeWorldName(req.body?.name || "");
-  if (!name) {
+  if (!name || isReservedWorldDirName(name)) {
     return res.status(400).json({ error: "World name is required." });
   }
 
   const worldDir = safeJoin(getWorldsRoot(server), name);
-  try {
-    await fs.stat(worldDir);
-  } catch {
+  if (!await isMinecraftWorldDirectory(worldDir)) {
     return res.status(404).json({ error: "World not found." });
   }
 
